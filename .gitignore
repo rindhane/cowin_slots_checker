@@ -1,0 +1,4 @@
+#programming files
+pyenv/
+__pycache__/
+node_modules/

@@ -1,21 +1,21 @@
 import asyncio
 from httpsRequests import ( url_class,
                               site)
-
+from utilities import header_base
 import datetime
-HOST_URL='https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByPin'
+HOST_URL='https://cdn-api.co-vin.in/api/v2/appointment/sessions/public'
 
-HEADERS={
-    'User-agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0',
-    'Accept-Language': 'en-US,en;q=0.5',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'DNT': '1',
-}
+HEADERS=header_base
 
-check=url_class(name='check')
-PINCODES=[444601,444602,444603,444604,444605,444606,444607]
+check_pincode=url_class(name='check_pincode', url='/calendarByPin')
+check_center=url_class(name='check_centre', url='/calendarByCenter')
+PINCODES=[444601,444602,444603,444604,444605,444606,444607,444701]
+CENTRES=[605471,571756,684620,616871,605478,605474,612520,644824,645143,724661,224634,605465,612154,684584,692887,605029,702534,724829,655997,737001,617784,769142,684547, 565759,566714,604809,604846,684616,692872,612172, 684637,34732,628352,612200]
+         
+CENTRES_OPTIONAL=[699016,695702,655911,724786,656096,565412,658130, 562549,734484,638780]
 FILTERS={
     'pincode':PINCODES,
+    #'center_id':CENTRES+CENTRES_OPTIONAL
 }
 
 def site_request(site,
@@ -28,7 +28,6 @@ def site_request(site,
 
 def date_provider(date_req):
     #date_req is a tuple object with len of 2 in format (str,int)
-    
     current=datetime.date.today()
     weeks=0
     if date_req[0]!='today':
@@ -69,18 +68,21 @@ def do_filter(centres,filter_key,**kwargs):
             result.append(centre)
     return result 
 
-async def filter_method(output,filters):
-    result=list()
-    keys=list(filters.keys())
+async def filter_method(output,filters={}):
+    tmp_output=list()
     for dict_ in output:
         centres =dict_.get('centers',[])
-        ans=centres
+        if isinstance(centres, list):
+            tmp_output.extend(centres)
+        else:
+            tmp_output.append(centres)
+    keys=list(filters.keys())
+    if keys:
         for key in keys:
-            ans=do_filter(ans,
-                        filter_key=key,
-                        **filters)
-            result.extend(ans)            
-    return result
+            tmp_output=do_filter(tmp_output,
+                                filter_key=key,
+                                **filters)
+    return tmp_output
 
 def get_item_value(key,item):
     if isinstance(key,str):
@@ -108,9 +110,9 @@ async def print_result(result):
     for item in result:
         print(item,'\n \n')
 
-async def main(find='today', filters=None):
+async def run_pincode(find='today', filters=None):
     cowin=site(host_url=HOST_URL,headers=HEADERS)
-    cowin.set_url_map([check,])
+    cowin.set_url_map([check_pincode, check_center])
     cowin.start_session()
     if find =='today':
         payloads=payload_generator(pincode=PINCODES)
@@ -120,7 +122,7 @@ async def main(find='today', filters=None):
     z=0
     while True:
         result=await asyncio.gather(*(caller(cowin,
-                                        url_key=check.name,
+                                        url_key=check_pincode.name,
                                         payload=payload,
                                        ) for payload in payloads
                                 )
@@ -128,14 +130,15 @@ async def main(find='today', filters=None):
         print(z)
         z=z+1
         #print(result)
-        if filters:
-            result = asyncio.create_task(filter_method(result,filters=FILTERS))
+        if filters is not None:
+            result = asyncio.create_task(filter_method(result,filters=filters))
             result= await result
             #print(result)
         result=await asyncio.create_task(
                             result_extractor(result,
                                             'name',
                                             'center_id',
+                                            'pincode',
                                             ['sessions',0,'min_age_limit'],
                                             ['sessions',0,'available_capacity'],
                                             ['sessions',0,'date']
@@ -144,6 +147,62 @@ async def main(find='today', filters=None):
         await asyncio.create_task(print_result(result))
     return result
 
-print('initating the run ')
-asyncio.run(main(find='today',filters=FILTERS), debug=False)
+def get_date_list(start_date,last_date):
+    start=datetime.date.fromisoformat(start_date)
+    end =datetime.date.fromisoformat(last_date)
+    diff=(end-start).days
+    #make end date inclusive in the output
+    diff =diff + (1 if diff >=0 else -1)
+    result=list()
+    for i in range(0,diff, (-1 if diff<0 else 1)):
+        date=start+datetime.timedelta(days=i)
+        result.append(date.strftime('%d-%m-%Y'))
+    return result
+
+def get_payloads(centres,start_date,last_date):
+    if isinstance(centres, list):
+        for centre in centres:
+            yield from get_payloads(centre,start_date,last_date)
+        return None 
+    dates=get_date_list(start_date,last_date)
+    for date in dates:
+        yield {'center_id':centres,'date':date}
+
+async def run_centers(centres, start_date, last_date, filters=None):
+    cowin=site(host_url=HOST_URL, headers=HEADERS)
+    cowin.set_url_map([check_pincode, check_center,])
+    cowin.start_session()
+    payloads=get_payloads(centres,start_date,last_date)
+    z=0
+    #generator to list inorder to repeatedly used in while loop
+    payloads = [i for i in payloads]
+    while True:
+        result= await asyncio.gather(*(caller(cowin,
+                                        url_key=check_center.name,
+                                        payload=payload,
+                                       ) for payload in payloads
+                                )
+                            )
+        print('\n \n',f"------Result({z})--------",'\n')
+        z=z+1
+        if filters is not None:
+            result = asyncio.create_task(filter_method(result,filters=filters))
+            result= await result
+            #print(result)
+        result=await asyncio.create_task(
+                            result_extractor(result,
+                                            'name',
+                                            'center_id',
+                                            'pincode',
+                                            ['sessions',0,'min_age_limit'],
+                                            ['sessions',0,'available_capacity'],
+                                            ['sessions',0,'date']
+                                            )
+                                        )
+        await asyncio.create_task(print_result(result))
+    return result
+
+print('initiating the run ')
+#asyncio.run(run_pincode(find='today',filters=FILTERS), debug=False)
+asyncio.run(run_centers(centres=CENTRES+CENTRES_OPTIONAL,start_date='2021-06-29', last_date='2021-06-30', filters={}))
 print('run complete')

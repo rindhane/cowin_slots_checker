@@ -1,0 +1,15 @@
+{'center_id': 695711, 'name': 'Bichutekdi Amc Hosp', 'address': 'Manapa Dawakhana Bicchutekadi Amravati', 'state_name': 'Maharashtra', 'district_name': 'Amravati', 'block_name': 'Amravati Corporation', 'pincode': 444602, 'lat': 20, 'long': 77, 'from': '09: 00: 00', 'to': '15: 30: 00', 'fee_type': 'Free', 'sessions': [
+        {'session_id': '6e316d36-4d8b-4698-afe7-e475e6b727a8', 'date': '30-06-2021', 'available_capacity': 34, 'min_age_limit': 45, 'vaccine': 'COVAXIN', 'slots': ['09: 00AM-10: 00AM', '10: 00AM-11: 00AM', '11: 00AM-12: 00PM', '12: 00PM-03: 30PM'
+            ], 'available_capacity_dose1': 0, 'available_capacity_dose2': 34
+        },
+        {'session_id': '54925589-594f-4189-9eed-d7b8391b4e2e', 'date': '30-06-2021', 'available_capacity': 46, 'min_age_limit': 18, 'max_age_limit': 44, 'allow_all_age': False, 'vaccine': 'COVAXIN', 'slots': ['09: 00AM-10: 00AM', '10: 00AM-11: 00AM', '11: 00AM-12: 00PM', '12: 00PM-03: 30PM'
+            ], 'available_capacity_dose1': 0, 'available_capacity_dose2': 46
+        }
+    ]
+}
+{'center_id': 34732, 'name': '13 Dental Hospital AMC', 'address': 'Wadali Amravati 444602', 'state_name': 'Maharashtra', 'district_name': 'Amravati', 'block_name': 'Amravati Corporation', 'pincode': 444602, 'lat': 20, 'long': 77, 'from': '09: 00: 00', 'to': '15: 30: 00', 'fee_type': 'Free', 'sessions': [
+        {'session_id': '91363663-d0d9-49c3-9635-ceb55adb4d07', 'date': '30-06-2021', 'available_capacity': 199, 'min_age_limit': 18, 'allow_all_age': True, 'vaccine': 'COVAXIN', 'slots': ['09: 00AM-10: 00AM', '10: 00AM-11: 00AM', '11: 00AM-12: 00PM', '12: 00PM-03: 30PM'
+            ], 'available_capacity_dose1': 0, 'available_capacity_dose2': 199
+        }
+    ]
+}

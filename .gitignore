@@ -2,3 +2,6 @@
 pyenv/
 __pycache__/
 node_modules/
+
+#personal_secrets/
+secrets/

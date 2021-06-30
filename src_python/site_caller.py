@@ -204,5 +204,5 @@ async def run_centers(centres, start_date, last_date, filters=None):
 
 print('initiating the run ')
 #asyncio.run(run_pincode(find='today',filters=FILTERS), debug=False)
-asyncio.run(run_centers(centres=CENTRES+CENTRES_OPTIONAL,start_date='2021-06-29', last_date='2021-06-30', filters={}))
+asyncio.run(run_centers(centres=CENTRES,start_date='2021-06-29', last_date='2021-06-30', filters={}))
 print('run complete')

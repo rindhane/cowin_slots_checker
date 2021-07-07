@@ -12,6 +12,7 @@ import json
 import asyncio
 from site_caller import run_scavenger
 import datetime
+from functools import partial 
 
 #personal secrets
 #----remove after usage --------
@@ -25,7 +26,7 @@ BENEFICIARIES=[51138106481350,54676226208390]
 #CENTRES=[552724]
 #PINCODES=['122001']
 CENTRES=[571756,684620]
-DATES=['06-07-2021','07-07-2021']
+DATES=['07-07-2021','08-07-2021']
 PINCODES=['444604']
 DOSE=1
 DOSE_AVAILABILITY=f'available_capacity_dose{DOSE}'
@@ -124,14 +125,30 @@ def payload_prepaper(context, **kwargs):
             sessions=centre['sessions']
             for session in sessions:
                 if (session.get('min_age_limit') in kwargs.get('min_age_limit') ) and \
-                   (session.get('date') in kwargs.get('dates')) : #and \
-                   #(session.get(DOSE_AVAILABILITY) > 0 ) :
+                   (session.get('date') in kwargs.get('dates'))  and \
+                   (session.get(DOSE_AVAILABILITY) > 0 ) :
                         result['center_id']=centre.get('center_id')
                         result['session_id']=session.get('session_id')
                         result['date']=session.get('date')
                         result['slot']=session.get('slots')[0]
                         yield result
     return result
+
+def payload_filter(centre, **kwargs):
+    #result={}
+    #centre=context.get('centers',{})
+    if centre.get('center_id') in kwargs.get('center_id',[]):
+        sessions=centre['sessions']
+        for session in sessions:
+            if (session.get('min_age_limit') in kwargs.get('min_age_limit') ) and \
+                (session.get('date') in kwargs.get('dates'))  and \
+                (session.get(DOSE_AVAILABILITY) > 0 ) :
+                    #result['center_id']=centre.get('center_id')
+                    #result['session_id']=session.get('session_id')
+                    #result['date']=session.get('date')
+                    #result['slot']=session.get('slots')[0]
+                    return True
+    return False 
 
 def dry_run_scheduler(cowin,response,**kwargs):
     auth=AuthConstructor(response.json())
@@ -202,7 +219,6 @@ async def run_continuous( mobile, secrets,
                             wait=5,inputs1={},inputs2={},count=0):
     if response is None: 
         response,cowin=get_login(mobile=mobile,secrets=secrets)
-    auth=AuthConstructor(response.json())
     state=True
     while state:
         result_gen=scheduler(cowin=cowin,response=response,**inputs1,**inputs2)
@@ -218,6 +234,11 @@ async def run_continuous( mobile, secrets,
                          wait=wait,inputs1=inputs1,inputs2=inputs2,count=count)
 
 async def run_loop(centres,start_date,last_date,filters={},check_wait=5,wait=5,z=0):
+    inputs2=dict(beneficiaries=BENEFICIARIES, dose=DOSE, 
+                        center_id=centres,
+                        min_age_limit=AGE_LIMITS,
+                        dates=DATES)
+    filters=partial(filters,**inputs2)
     while True:
         for i in await run_scavenger(centres=centres,
                                 start_date= start_date, 
@@ -270,8 +291,8 @@ if __name__== "__main__":
     asyncio.run(run_loop(centres=CENTRES,
                             start_date= start_date, 
                             last_date= last_date, 
-                            filters={},
-                            check_wait=10,
+                            filters=payload_filter,
+                            check_wait=3,
                             wait=5,
                             ))
         

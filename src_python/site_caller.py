@@ -11,9 +11,9 @@ HEADERS=header_base
 check_pincode=url_class(name='check_pincode', url='/calendarByPin')
 check_center=url_class(name='check_centre', url='/calendarByCenter')
 PINCODES=[444601,444602,444603,444604,444605,444606,444607,444701]
-#CENTRES=[605471,571756,684620,616871,605478,605474,612520,644824,645143,724661,224634,605465,612154,684584,692887,605029,702534,724829,655997,737001,617784,769142,684547, 565759,566714,604809,604846,684616,692872,612172, 684637,34732,628352,612200]
+CENTRES=[605471,571756,684620,616871,605478,605474,612520,644824,645143,724661,224634,605465,612154,684584,692887,605029,702534,724829,655997,737001,617784,769142,684547, 565759,566714,604809,604846,684616,692872,612172, 684637,34732,628352,612200]
 
-CENTRES=[571756,684620]        
+#CENTRES=[571756,684620]        
 CENTRES_OPTIONAL=[699016,695702,655911,724786,656096,565412,658130, 562549,734484,638780]
 FILTERS={
     'pincode':PINCODES,
@@ -84,6 +84,18 @@ async def filter_method(output,filters={}):
             tmp_output=do_filter(tmp_output,
                                 filter_key=key,
                                 **filters)
+    return tmp_output
+
+async def filter_processor_method(output,processor=None):
+    tmp_output=list()
+    for dict_ in output:
+        centres =dict_.get('centers',[])
+        if isinstance(centres, list):
+            tmp_output.extend(centres)
+        else:
+            tmp_output.append(centres)
+    if processor:
+        tmp_output=list(filter(processor,tmp_output))
     return tmp_output
 
 def get_item_value(key,item):
@@ -229,9 +241,10 @@ async def run_scavenger(centres, start_date, last_date, filters=None, z=0):
     print('\n \n',f"------Result({z})--------",'\n')
     z=z+1
     if filters is not None:
-        result = asyncio.create_task(filter_method(result,filters=filters))
+        result = asyncio.create_task(
+                filter_processor_method(result,processor=filters)
+                                    )
         result= await result
-        #print(result)
     result=await asyncio.create_task(
                         result_extractor(result,
                                         'name',
@@ -250,5 +263,5 @@ async def run_scavenger(centres, start_date, last_date, filters=None, z=0):
 if __name__ == '__main__':
     print('initiating the run ')
     #asyncio.run(run_pincode(find='today',filters=FILTERS), debug=False)
-    asyncio.run(run_centers(centres=CENTRES,start_date='2021-07-05', last_date='2021-07-06', filters={}))
+    asyncio.run(run_centers(centres=CENTRES,start_date='2021-07-07', last_date='2021-07-08', filters={}))
     print('run complete')
